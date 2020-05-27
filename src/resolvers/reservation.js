@@ -2,7 +2,6 @@ import { combineResolvers } from "graphql-resolvers";
 import { isAdmin, isAuthenticated } from "./authorization";
 import Sequelize from 'sequelize'
 
-
 const checkInvalidDates = ({ end, start }) => {
   end = new Date(end)
   start = new Date(start)
@@ -155,7 +154,6 @@ const lookForConcurrentReservations = async (start, end, models, roomId, t) => {
   return concurrentReservations
 }
 
-
 const lookForConcurrentReservationsUpdate = async (start, end, models, roomId, reservationId, t) => {
   const concurrentReservations = await models.Reservation.findAll(
     {
@@ -225,6 +223,21 @@ const lookForConcurrentReservationsUpdate = async (start, end, models, roomId, r
   return concurrentReservations
 }
 
+const ckCncrDtsFrmIn =(inDts, start, end, currIdx) => {
+  for (let i = 0; i < inDts.length; i++) {
+    const old = inDts[i];
+    if (i !== currIdx) {
+      if (
+        (end >= old.start && end <= old.end) || 
+        (start >= old.start && start<= old.end) ||
+        (start <= old.start && end>= old.end)
+      ) {
+        return true
+      }
+    }
+  }
+  return false
+}
 
 export default {
   Query: {
@@ -283,6 +296,10 @@ export default {
           for (let i = 0; i < input.dates.length; i++) {
             if (checkInvalidDates(input.dates[i])) {
               throw new Error('Dates must belong to same day')
+            }
+
+            if (ckCncrDtsFrmIn(input.dates, input.dates[i].start, input.dates[i].end, i)) {
+              throw new Error('Input dates cannot be concurrent')
             }
 
             Array.prototype.push.apply(
@@ -348,6 +365,10 @@ export default {
 
           if (!input.start || !input.end) {
             throw new Error('Cannot make a reservation without dates')
+          }
+
+          if (checkInvalidDates(input)){
+            throw new Error('Dates must belong to same day')
           }
 
           if (!room) {
@@ -457,7 +478,6 @@ export default {
       }
     },
     room: async (reservation, args, { models }) => {
-      console.log(reservation)
       if (Array.isArray(reservation) && reservation.length > 0) {
         return await models.Room.findOne({
           where: { id: parseInt(reservation[0].roomId) },
