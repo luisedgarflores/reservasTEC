@@ -36,7 +36,12 @@ const room = (sequelize, DataTypes) => {
   Room.associate = models => {
     Room.belongsTo(models.Building)
     Room.belongsToMany(models.Role, { through: models.ReservesPermissions })
-    Room.belongsToMany(models.User, { through: models.Reservation })
+    Room.belongsToMany(models.User, {
+      through: {
+        model: models.Reservation,
+        unique: false
+      }
+    })
   }
 
   return Room

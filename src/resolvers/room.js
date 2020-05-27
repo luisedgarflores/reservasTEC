@@ -2,6 +2,173 @@ import { combineResolvers } from 'graphql-resolvers'
 import { isAdmin } from './authorization'
 import Sequelize from 'sequelize'
 
+const checkInvalidDates = ({end, start}) => {
+  end = new Date(end)
+  start = new Date(start)
+
+  if (!(start instanceof Date) || isNaN(start)) {
+    return true
+  }
+
+
+  if (!(end instanceof Date) || isNaN(end)) {
+    return true
+  }
+
+  if (
+    !(start.getFullYear() === end.getFullYear()) ||
+    !(start.getMonth() === end.getMonth()) ||
+    !(start.getDate() === end.getDate())
+  ) {
+    return true
+  } else {
+    return false
+  }
+}
+
+const lookForConcurrentDates = async (start, end, modelsmysql, roomsIds, t) => {
+  const reservationRestrictions = await modelsmysql.ReservationRestriction.findAll(
+    {
+      where: {
+        [Sequelize.Op.and]: [
+          {
+            roomId: {
+              [Sequelize.Op.or]: roomsIds
+            }
+          },
+          {
+            [Sequelize.Op.or]: [
+              {
+                [Sequelize.Op.and]: [
+                  {
+                    start: {
+                      [Sequelize.Op.lte]: end
+                    }
+                  },
+                  {
+                    end: {
+                      [Sequelize.Op.gte]: end
+                    }
+                  }
+                ]
+              },
+              {
+                [Sequelize.Op.and]: [
+                  {
+                    start: {
+                      [Sequelize.Op.lte]: start
+                    }
+                  },
+                  {
+                    end: {
+                      [Sequelize.Op.gte]: start
+                    }
+                  }
+                ]
+              },
+              {
+                [Sequelize.Op.and]: [
+                  {
+                    start: {
+                      [Sequelize.Op.gte]: start
+                    }
+                  },
+                  {
+                    end: {
+                      [Sequelize.Op.lte]: end
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      attributes:  ['roomId'],
+      raw: true
+    },
+    {
+      transaction: t
+    }
+  )
+  return reservationRestrictions
+}
+
+const lookForConcurrentReservations = async (start, end, models, roomsIds, t) => {
+  const concurrentReservations = await models.Reservation.findAll(
+    {
+      where: {
+        [Sequelize.Op.and]: [
+          {
+            roomId: {
+              [Sequelize.Op.or]: roomsIds
+            }
+          },
+          {
+            [Sequelize.Op.or]: [
+              {
+                [Sequelize.Op.and]: [
+                  {
+                    start: {
+                      [Sequelize.Op.lte]: end
+                    }
+                  },
+                  {
+                    end: {
+                      [Sequelize.Op.gte]: end
+                    }
+                  }
+                ]
+              },
+              {
+                [Sequelize.Op.and]: [
+                  {
+                    start: {
+                      [Sequelize.Op.lte]: start
+                    }
+                  },
+                  {
+                    end: {
+                      [Sequelize.Op.gte]: start
+                    }
+                  }
+                ]
+              },
+              {
+                [Sequelize.Op.and]: [
+                  {
+                    start: {
+                      [Sequelize.Op.gte]: start
+                    }
+                  },
+                  {
+                    end: {
+                      [Sequelize.Op.lte]: end
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      attributes: ['roomId'],
+      raw: true
+    },
+    { transaction: t }
+  )
+  return concurrentReservations
+}
+
+
+const roomConcurrencyFilter = (room, roomsConcurrent) => {
+  if (roomsConcurrent.includes(room.id)) {
+    return false
+  } else {
+    return true
+  }
+}
+
 export default {
   Query: {
     rooms: async (parent, args, { models, me }) => {
@@ -13,8 +180,8 @@ export default {
     bookableRooms: async (
       parent,
       { filter },
-      { 
-        models, 
+      {
+        models,
         me,
         sequelize,
         modelsmysql
@@ -22,36 +189,48 @@ export default {
     ) => {
       const t = await sequelize.transaction()
       try {
-        const role = await models.Role.findByPk(me.roleId, {include: models.Room})
+        const role = await models.Role.findByPk(me.roleId, { include: models.Room })
 
-        const rooms = await role.getRooms(
+        let rooms = await role.getRooms(
           {
             where: {
               [Sequelize.Op.and]: [
-                filter && filter.capacity && {capacity: {[Sequelize.Op.gte]: filter.capacity}},
-                filter && filter.building && !filter.campus && {buildingId: filter.building},
-                filter && filter.campus && !filter.building && {campusId: filter.campus},
-                filter && filter.name && {name: {[Sequelize.Op.regexp]: filter.name}}
+                filter && filter.capacity && { capacity: { [Sequelize.Op.gte]: filter.capacity } },
+                filter && filter.building && !filter.campus && { buildingId: filter.building },
+                filter && filter.campus && !filter.building && { campusId: filter.campus },
+                filter && filter.name && { name: { [Sequelize.Op.regexp]: filter.name } }
               ]
             },
           }
         )
 
-        const roomsIds = rooms.map(room => {
-          return {
-            roomId: room.id
-          }
-        })
+        const roomsIds = rooms.map(room => room.id)
 
-        const reservationRestrictions = await modelsmysql.ReservationRestriction.findAll(
-          {
-            where: {
-              [Sequelize.Op.or]: roomsIds
+        const notAvailableRooms = []
+
+
+        if (filter.dates) {
+          for (let i = 0; i < filter.dates.length; i++) {
+            if (checkInvalidDates(filter.dates[i])) {
+              throw new Error('Dates must belong to same day')
             }
-          }
-        )
+            Array.prototype.push.apply(notAvailableRooms, await lookForConcurrentDates(filter.dates[i].start, filter.dates[i].end, modelsmysql, roomsIds,t))  
 
-        console.log(reservationRestrictions)
+            Array.prototype.push.apply(notAvailableRooms,
+              await lookForConcurrentReservations(
+                filter.dates[i].start,
+                filter.dates[i].end,
+                models,
+                roomsIds,
+                t
+              )
+            )
+          }
+        }
+
+        const notAvailableRoomsIds = notAvailableRooms.map(room => room.roomId)
+
+        rooms = rooms.filter( room => roomConcurrencyFilter(room, notAvailableRoomsIds) );
 
         t.commit()
         return rooms

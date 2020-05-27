@@ -9,6 +9,7 @@ import campusResolvers from '../resolvers/campus'
 import buildingResolvers from '../resolvers/building'
 import roomResolvers from '../resolvers/room'
 import reserveRestrictionResolvers from '../resolvers/reservesRestrictions'
+import reservationResolvers from '../resolvers/reservation'
 import { GraphQLDateTime } from 'graphql-iso-date'
 
 const customScalarResolver = {
@@ -33,4 +34,5 @@ export default [
   campusResolvers,
   roomResolvers,
   reserveRestrictionResolvers,
+  reservationResolvers
 ]

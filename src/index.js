@@ -86,6 +86,7 @@ const create_user_with_messages = async (date) => {
   await models.User.create(
     {
       username: 'luisflores',
+      name: 'Luis Edgar Flores',
       role: 'ADMIN',
       age: 20,
       email: 'luisflores@gmail.com',
@@ -124,8 +125,8 @@ const create_user_with_messages = async (date) => {
   await modelsmysql.ReservationRestriction.create(
     {
       roomId: 1,
-      start: new Date (2020, 10, 2, 8,0,0,0),
-      end: new Date (2020, 10, 2, 8,5,0,0)
+      start: new Date ("2020-05-27T20:30:00.521Z"),
+      end: new Date ("2020-05-27T20:45:00.521Z")
     }
   )
 }

@@ -42,7 +42,12 @@ const user = (sequelize, DataTypes) => {
     //User.hasMany(models.Message, { onDelete: 'CASCADE' })
     //User.hasMany(models.Trip, { onDelete: 'CASCADE'})
     User.belongsTo(models.Role)
-    User.belongsToMany(models.Room, { through: models.Reservation })
+    User.belongsToMany(models.Room, {
+      through: {
+        model: models.Reservation,
+        unique: false
+      }
+    })
   }
 
   User.findByLogin = async login => {

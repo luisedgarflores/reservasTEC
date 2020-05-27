@@ -10,6 +10,7 @@ import campusSchema from './campus'
 import buildingSchema from './building'
 import roomSchema from './room'
 import reservationsRestrictionSchema from './reservesRestrictions'
+import reservationSchema from './reservation'
 
 const linkSchema = gql`
   scalar Date
@@ -40,4 +41,5 @@ export default [
   buildingSchema,
   roomSchema,
   reservationsRestrictionSchema,
+  reservationSchema
 ];
