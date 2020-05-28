@@ -40,7 +40,7 @@ export default gql`
 
   input reservationsFilter {
     id: ID
-    roomId: ID!
-    period: [Schedule!]
+    roomId: ID
+    period: Schedule
   }
 `
