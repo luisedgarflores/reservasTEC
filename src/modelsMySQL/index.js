@@ -12,7 +12,6 @@ const sequelizemysql = new Sequelize(
 )
 
 const models = {
-  Prueba: sequelizemysql.import('./prueba'),
   ReservationRestriction: sequelizemysql.import('./reservesRestrictions')
 }
 

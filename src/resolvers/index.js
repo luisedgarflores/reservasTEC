@@ -10,10 +10,13 @@ import buildingResolvers from '../resolvers/building'
 import roomResolvers from '../resolvers/room'
 import reserveRestrictionResolvers from '../resolvers/reservesRestrictions'
 import reservationResolvers from '../resolvers/reservation'
+import csvResolvers from '../resolvers/csv'
 import { GraphQLDateTime } from 'graphql-iso-date'
+import GraphQLJSON from 'graphql-type-json';
 
 const customScalarResolver = {
   Date: GraphQLDateTime,
+  JSON: GraphQLJSON,
   Schedule: {
     start: Date,
     end: Date
@@ -24,15 +27,11 @@ const customScalarResolver = {
 export default [
   customScalarResolver,
   userResolvers, 
-  //messageResolvers, 
-  //trashCanRessolvers, 
-  //bikeResolvers,
-  //stationResolvers,
-  //tripResolvers,
   otpResolvers,
   buildingResolvers,
   campusResolvers,
   roomResolvers,
   reserveRestrictionResolvers,
-  reservationResolvers
+  reservationResolvers,
+  csvResolvers
 ]

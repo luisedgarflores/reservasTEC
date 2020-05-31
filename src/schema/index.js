@@ -11,9 +11,12 @@ import buildingSchema from './building'
 import roomSchema from './room'
 import reservationsRestrictionSchema from './reservesRestrictions'
 import reservationSchema from './reservation'
+import csvSchema from './csv'
 
 const linkSchema = gql`
   scalar Date
+
+  scalar JSON
 
   scalar Schedule
 
@@ -31,15 +34,11 @@ const linkSchema = gql`
 export default [
   linkSchema, 
   userSchema, 
-  //messageSchema, 
-  //trashCanSchema, 
-  //bikeSchema,
-  //stationSchema,
-  //tripSchema,
   otpSchema,
   campusSchema,
   buildingSchema,
   roomSchema,
   reservationsRestrictionSchema,
-  reservationSchema
+  reservationSchema,
+  csvSchema
 ];

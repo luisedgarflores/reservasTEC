@@ -3,6 +3,8 @@ import http from 'http'
 import cors from 'cors';
 import express from 'express'
 import { ApolloServer, UserInputError, AuthenticationError } from 'apollo-server-express'
+import mongoose from 'mongoose';
+import csvModel from './mongoDBModels/csv'
 import schema from './schema'
 import resolvers from './resolvers'
 import models, { sequelize } from './models'
@@ -24,6 +26,8 @@ async function createTransporter() {
   });
   return transporter
 }
+
+mongoose.connect('mongodb://localhost:27017/reservas');
 
 const server = new ApolloServer({
   typeDefs: schema,
@@ -56,7 +60,10 @@ const server = new ApolloServer({
         me,
         secret: process.env.SECRET,
         sequelize,
-        transporter
+        transporter,
+        modelsMongoDB: {
+          csvModel
+        }
       }
     }
   }
@@ -67,16 +74,21 @@ server.applyMiddleware({ app, path: '/graphql' })
 const httpServer = http.createServer(app)
 server.installSubscriptionHandlers(httpServer)
 
-sequelize.sync({ force: erase_database_on_restart, alter: true }).then(async () => {
-  if (erase_database_on_restart)
-    create_user_with_messages(new Date())
-  httpServer.listen({ port: 8000 }, () => {
-    console.log('Apollo Server on http://localhost:8000/graphql');
-  });
-});
 
 sequelizemysql.sync({ force: erase_database_on_restart, alter: true }).then(async () => {
   return
+}).then()
+
+
+sequelize.sync({ force: erase_database_on_restart, alter: true }).then(async () => {
+  if (erase_database_on_restart) {
+    await csvModel.deleteMany()
+    create_user_with_messages(new Date())
+  }
+    
+  httpServer.listen({ port: 8000 }, () => {
+    console.log('Apollo Server on http://localhost:8000/graphql');
+  });
 });
 
 const create_user_with_messages = async (date) => {

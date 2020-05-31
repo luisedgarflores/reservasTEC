@@ -56,7 +56,15 @@ const reservation = (sequelize, DataTypes) => {
       },
       unique: false,
     },
-  })
+  },
+  {
+    indexes: [
+      {
+        fields: ['start', 'end']
+      }
+    ]
+  }
+  )
 
   return Reservation
 }

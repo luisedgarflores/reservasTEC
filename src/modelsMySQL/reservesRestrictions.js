@@ -1,5 +1,5 @@
 const reservervesrestrictions = (sequelize, DataTypes) => {
-  const ReservesRestrictions = sequelize.define('reservervesrestrictions', {
+  const ReservesRestrictions = sequelize.define('reservesrestriction', {
     start:{
       type: DataTypes.DATE,
       validate: {
