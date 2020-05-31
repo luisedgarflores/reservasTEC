@@ -11,10 +11,11 @@ import models, { sequelize } from './models'
 import modelsmysql, { sequelizemysql } from './modelsMySQL'
 import jwt from 'jsonwebtoken'
 const nodemailer = require('nodemailer');
+import bodyParser from 'body-parser'
 const port = process.env.PORT;
 const app = express()
 const erase_database_on_restart = true
-app.use(cors());
+app.use(cors(), bodyParser.json({ limit: '50mb' }))
 
 async function createTransporter() {
   const transporter = await nodemailer.createTransport({
