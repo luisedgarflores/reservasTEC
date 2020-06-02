@@ -44,8 +44,7 @@ export default {
       { models, secret, transporter }
     ) => {
       const user = await models.User.findByLogin(login)
-      //const mail = await sendEmail('Este es un mensaje de prueba de una reserva', 'Prueba de servidor correo', 'a01328387@itesm.mx', transporter)
-      //console.log(mail)
+
       if (!user) {
         throw new UserInputError(
           'No user found with this login credentials'

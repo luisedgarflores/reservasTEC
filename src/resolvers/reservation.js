@@ -1,6 +1,42 @@
 import { combineResolvers } from "graphql-resolvers";
 import { isAdmin, isAuthenticated } from "./authorization";
 import Sequelize from "sequelize";
+import { sendEmail } from './emailSender'
+
+const dayFrmDt =  {
+  0: 'Domingo',
+  1: 'Lunes',
+  2: 'Martes',
+  3: 'Miércoles',
+  4: 'Jueves',
+  5: 'Viernes',
+  6: 'Sábado',
+}
+
+const fmtTime = (date) => {
+  return `${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`
+}
+
+const monthFrmDt = {
+  0: 'Enero',
+  1: 'Ferero',
+  2: 'Marzo',
+  3: 'Abril',
+  4: 'Mayo',
+  5: 'Junio',
+  6: 'Julio',
+  7: 'Agosto',
+  8: 'Septiembre',
+  9:  'Octubre',
+  10: 'Noviembre',
+  11: 'Diciembre',
+}
+
+const fmtDt = (date) => {
+  return `${dayFrmDt[date.getDay()]} ${date.getDate()} de ${monthFrmDt[date.getMonth()]} del ${date.getFullYear()}`
+}
+
+
 
 const checkInvalidDates = ({ end, start }) => {
   end = new Date(end);
@@ -256,20 +292,20 @@ export default {
               filter && filter.roomId && { roomId: filter.roomId },
               filter && filter.id && { id: filter.id },
               filter &&
-                filter.period && {
-                  [Sequelize.Op.and]: [
-                    {
-                      start: {
-                        [Sequelize.Op.gte]: filter.period.start,
-                      },
+              filter.period && {
+                [Sequelize.Op.and]: [
+                  {
+                    start: {
+                      [Sequelize.Op.gte]: filter.period.start,
                     },
-                    {
-                      end: {
-                        [Sequelize.Op.lte]: filter.period.end,
-                      },
+                  },
+                  {
+                    end: {
+                      [Sequelize.Op.lte]: filter.period.end,
                     },
-                  ],
-                },
+                  },
+                ],
+              },
             ],
           },
         });
@@ -300,20 +336,20 @@ export default {
               filter && filter.roomId && { roomId: filter.roomId },
               filter && filter.id && { id: filter.id },
               filter &&
-                filter.period && {
-                  [Sequelize.Op.and]: [
-                    {
-                      start: {
-                        [Sequelize.Op.gte]: filter.period.start,
-                      },
+              filter.period && {
+                [Sequelize.Op.and]: [
+                  {
+                    start: {
+                      [Sequelize.Op.gte]: filter.period.start,
                     },
-                    {
-                      end: {
-                        [Sequelize.Op.lte]: filter.period.end,
-                      },
+                  },
+                  {
+                    end: {
+                      [Sequelize.Op.lte]: filter.period.end,
                     },
-                  ],
-                },
+                  },
+                ],
+              },
               {
                 userId: me.id,
               },
@@ -331,7 +367,7 @@ export default {
       async (
         parent,
         { input },
-        { models, sequelize, modelsmysql, sequelizemysql, me }
+        { models, sequelize, modelsmysql, sequelizemysql, me, transporter }
       ) => {
         const t = await sequelize.transaction();
         try {
@@ -390,7 +426,7 @@ export default {
           if (notAvailableDates.length > 0) {
             throw new Error(
               `The following dates are not current available for room ${
-                room.name
+              room.name
               }: ${JSON.stringify(notAvailableDates)}`
             );
           }
@@ -414,6 +450,26 @@ export default {
           }
 
           await t.commit();
+
+          let reservationsDatesString = ''
+
+          try {
+            for (let i = 0; i < reservations.length; i++) {
+              const element = reservations[i];
+              const start = new Date(element.start)
+              const end = new Date(element.end)
+              reservationsDatesString = reservationsDatesString.concat(`${fmtDt(start)} de ${fmtTime(start)} a ${fmtTime(end)}\n`)
+            }
+          } catch (err) {
+            console.log(err)
+          }
+
+          try {
+            await sendEmail (`La reserva para ${room.name} en las siguientes fechas: \n${reservationsDatesString}ha sido confirmada.`,'Tu reserva ha sido confirmada.' , me.email, transporter)
+          } catch (err) {
+            console.log(err)
+            console.log('The mail was not sent')
+          }
 
           return reservations;
         } catch (err) {
@@ -478,7 +534,7 @@ export default {
           if (notAvailableDates.length > 0) {
             throw new Error(
               `The following dates are not current available for room ${
-                room.name
+              room.name
               }: ${JSON.stringify(notAvailableDates)}`
             );
           }

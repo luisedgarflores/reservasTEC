@@ -28,7 +28,7 @@ async function createTransporter() {
   return transporter
 }
 
-mongoose.connect('mongodb://localhost:27017/reservas');
+mongoose.connect('mongodb+srv://luisflores:DeaYFvdMYHCUk4fr@reservas-urneb.mongodb.net/test?retryWrites=true&w=majority');
 
 const server = new ApolloServer({
   typeDefs: schema,
@@ -102,7 +102,7 @@ const create_user_with_messages = async (date) => {
       name: 'Luis Edgar Flores',
       role: 'ADMIN',
       age: 20,
-      email: 'luisflores@gmail.com',
+      email: 'luisedgarflorescarpinteyro@gmail.com',
       password: '1234567',
       roleId: userRole.id,
     },

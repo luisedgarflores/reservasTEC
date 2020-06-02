@@ -35,6 +35,7 @@ export default {
             const reserveRestriction = await modelsmysql.ReservationRestriction.create(
               {
                 ...input,
+                createdAt: new Date()
               },
               {
                 transaction: t
